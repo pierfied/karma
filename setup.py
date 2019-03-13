@@ -3,7 +3,6 @@
 import os
 import re
 import sys
-import sysconfig
 import platform
 import subprocess
 
@@ -76,15 +75,8 @@ setup(
     author_email='pierfied@email.arizona.edu',
     description='LMapR (Lognormal Map Reconstruction) - Improved Weak Lensing Mass Maps via a Lognormal Prior',
     long_description='',
-    # tell setuptools to look for any packages under 'src'
-    packages=find_packages('src'),
-    # tell setuptools that all packages will be under the 'src' directory
-    # and nowhere else
-    package_dir={'': 'src'},
-    # add an extension module named 'lmapr' to the package
-    # 'lmapr'
+    packages=['lmapr'],
     ext_modules=[CMakeExtension('lmapr/')],
-    # add custom build_ext command
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )
