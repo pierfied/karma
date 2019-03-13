@@ -1,5 +1,6 @@
 # setup.py borrowed from http://www.benjack.io/2018/02/02/python-cpp-revisited.html
 
+import os
 import re
 import sys
 import sysconfig
@@ -82,7 +83,7 @@ setup(
     package_dir={'': 'src'},
     # add an extension module named 'lmapr' to the package
     # 'lmapr'
-    ext_modules=[CMakeExtension('lmapr/lmapr')],
+    ext_modules=[CMakeExtension('lmapr/')],
     # add custom build_ext command
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
