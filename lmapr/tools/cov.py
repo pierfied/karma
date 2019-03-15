@@ -29,7 +29,7 @@ def cl2xi_theta(cl, theta):
 def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
     """Covariance matrix from power spectrum.
 
-    Computes the covariance matrix for pixels from provided power spectrum.
+    Computes the covariance matrix for the requested pixels from the provided power spectrum.
 
     :param cl: Power spectrum. Will truncate if len(cl) > lmax + 1.
     :type cl: array-like (float)
