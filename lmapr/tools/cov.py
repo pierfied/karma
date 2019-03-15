@@ -69,7 +69,7 @@ def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
     # Calculate matrix of separations between pixels.
     ang_sep = np.zeros([npix, npix])
     for i in tqdm(range(npix), desc='Computing angular separations'):
-        ang_sep[i, :] = hp.rotator.angdist(ang_coord[i], ang_coord)
+        ang_sep[i, :] = hp.rotator.angdist(ang_coord[:, i], ang_coord)
 
     # Construct interpolation points for the angular correlation function.
     theta_interp = np.linspace(0, np.pi, ninterp)
