@@ -5,6 +5,7 @@ import re
 import sys
 import platform
 import subprocess
+import setuptools
 
 from distutils.version import LooseVersion
 from setuptools import setup, find_packages, Extension
@@ -75,7 +76,7 @@ setup(
     author_email='pierfied@email.arizona.edu',
     description='LMapR (Lognormal Map Reconstruction) - Improved Weak Lensing Mass Maps via a Lognormal Prior',
     long_description='',
-    packages=['lmapr'],
+    packages=setuptools.find_packages(),
     ext_modules=[CMakeExtension('lmapr/')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
