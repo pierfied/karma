@@ -110,7 +110,7 @@ def conv2shear_mats(nside, indices=None, lmax=None):
     :type nside: int
     :param indices: Healpix pixel numbers to build matrices for. Default: All pixels in the sky.
     :type indices: array-like (int)
-    :param lmax: Maximum l mode to include in transformation.
+    :param lmax: Maximum l mode to include in transformation. Default: 3*nside - 1
     :type lmax: int
     :return: Transformation matrices for convergence to shear map components.
     :rtype: Tuple of array-like (float)
