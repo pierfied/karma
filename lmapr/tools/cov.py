@@ -12,10 +12,20 @@ def cl2xi_theta(cl, theta):
     :param cl: Power spectrum.
     :type cl: array-like (float)
     :param theta: Separation angle in radians.
-    :type theta: float
+    :type theta: float or array-like (float)
     :return: xi(theta) - Angular correlation at separation theta.
-    :rtype: float
+    :rtype: array-like (float)
     """
+
+    # Convert all array-like input to ndarrays.
+    cl = np.asarray(cl)
+    theta = np.asarray(theta)
+
+    # Check input sizes.
+    if cl.ndim != 1:
+        raise Exception('Cl must be a 1D array.')
+    if theta.ndim > 1:
+        raise Exception('Theta must be a 0D or 1D array.')
 
     # Get array of l values.
     ells = np.arange(0, len(cl))
@@ -45,6 +55,22 @@ def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
     :rtype: array-like (float)
     """
 
+    # If indices is not set default to all pixels.
+    if indices is None:
+        indices = np.arange(hp.nside2npix(nside))
+
+    # Convert all array-like input to ndarrays.
+    cl = np.asarray(cl)
+    indices = np.asarray(indices)
+
+    # Check input sizes.
+    if cl.ndim != 1:
+        raise Exception('Cl must be a 1D array.')
+    if indices.ndim != 1:
+        raise Exception('Indices must be a 1D array.')
+    if len(indices) != len(np.unique(indices)):
+        raise Exception('Indices must be unique.')
+
     # Set lmax if not already set.
     if lmax is None:
         lmax = len(cl)
@@ -54,10 +80,6 @@ def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
         input_cl = cl[:lmax + 1]
     else:
         input_cl = cl
-
-    # If indices is not set default to all pixels.
-    if indices is None:
-        indices = np.arange(hp.nside2npix(nside))
 
     # Get the number of pixels.
     npix = len(indices)
