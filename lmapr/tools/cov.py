@@ -36,7 +36,7 @@ def cl2xi_theta(cl, theta):
     return xi
 
 
-def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
+def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000, log=False, shift=None):
     """Covariance matrix from power spectrum.
 
     Computes the covariance matrix for the requested pixels from the provided power spectrum.
@@ -51,6 +51,10 @@ def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
     :type lmax: float
     :param ninterp: Number of interpolation points for correlation function between 0 and pi. Default: 10,000
     :type ninterp: int
+    :param log: Flag to return covariance matrix in log-space. Default: False
+    :type log: bool
+    :param shift: Shift parameter for log transformation of covariance matrix. Required if log=True. Default: None
+    :type shift: float
     :return: Covariance matrix.
     :rtype: array-like (float)
     """
@@ -70,6 +74,10 @@ def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
         raise Exception('Indices must be a 1D array.')
     if len(indices) != len(np.unique(indices)):
         raise Exception('Indices must be unique.')
+
+    # Check that shift parameter is set if log covariance is requested.
+    if log is True and shift is None:
+        raise Exception('Shift parameter for log covariance transformation must be specified.')
 
     # Set lmax if not already set.
     if lmax is None:
@@ -99,5 +107,9 @@ def cl2cov_mat(cl, nside, indices=None, lmax=None, ninterp=10000):
 
     # Compute covariance matrix using linear interpolation.
     cov = np.interp(ang_sep, theta_interp, xi_interp)
+
+    # Perform log transformation of covariance matrix if requested.
+    if log is True:
+        cov = np.log(cov / (shift ** 2) + 1)
 
     return cov

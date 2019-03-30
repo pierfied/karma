@@ -136,3 +136,24 @@ def test_cl2cov_indices_unique():
 
     with np.testing.assert_raises_regex(Exception, 'unique'):
         cov.cl2cov_mat(cl, nside, indices=inds)
+
+
+def test_cl2cov_log_shift_err():
+    """Test that cl2cov raises an exception when log covariance is requested but no shift is specified."""
+    nside = 16
+
+    cl = [0]
+
+    with np.testing.assert_raises_regex(Exception, 'Shift'):
+        cov.cl2cov_mat(cl, nside, log=True)
+
+def test_cl2cov_log():
+    """Test that cl2cov raises an exception when log covariance is requested but no shift is specified."""
+    nside = 16
+
+    cl = [1]
+
+    xi_ii = cov.cl2xi_theta(cl, 0)
+    cov_mat = cov.cl2cov_mat(cl, nside, log=True, shift=1)
+
+    np.testing.assert_almost_equal(cov_mat, np.log(xi_ii + 1))
