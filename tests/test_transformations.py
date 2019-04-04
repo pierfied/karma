@@ -1,6 +1,6 @@
 import numpy as np
 import healpy as hp
-from lmapr.tools import transformations
+from karma.tools import transformations
 
 
 def test_k2g_zero():

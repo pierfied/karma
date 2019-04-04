@@ -1,5 +1,5 @@
 import numpy as np
-from lmapr.tools import cov
+from karma.tools import cov
 
 
 def test_cl2xi_zero():

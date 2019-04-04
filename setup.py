@@ -70,14 +70,14 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    name='lmapr',
+    name='karma',
     version='0.1',
     author='Pier Fiedorowicz',
     author_email='pierfied@email.arizona.edu',
-    description='LMapR (Lognormal Map Reconstruction) - Improved Weak Lensing Mass Maps via a Lognormal Prior',
+    description='KARMA (KARMA Algorithm for Reconstructing Mass mAps) - Improved Weak Lensing Mass Maps via a Lognormal Prior',
     long_description='',
     packages=setuptools.find_packages(),
-    ext_modules=[CMakeExtension('lmapr/')],
+    ext_modules=[CMakeExtension('karma/')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )

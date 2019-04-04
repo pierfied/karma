@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(lmapr C)
+project(karma C)
 
 set(CMAKE_C_STANDARD 11)
 
@@ -13,6 +13,6 @@ ExternalProject_Add(chronos_lib GIT_REPOSITORY https://github.com/pierfied/chron
 include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
 link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 
-add_library(lmapr SHARED src/lmapr.c src/lmapr.h)
-add_dependencies(lmapr chronos_lib)
-target_link_libraries(lmapr libchronos.a)
+add_library(karma SHARED src/karma.c src/karma.h)
+add_dependencies(karma chronos_lib)
+target_link_libraries(karma libchronos.a)
