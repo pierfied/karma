@@ -17,7 +17,7 @@ def test_svd_eye():
 
 
 def test_svd_diag():
-    """Test that the SVD of a sorted diagonal matrix is."""
+    """Test that the SVD of a sorted diagonal matrix is the original diagonal matrix."""
 
     n = 10
 
