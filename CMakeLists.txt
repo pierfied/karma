@@ -24,11 +24,11 @@ link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_LAPACK_CONFIG_H  -DLAPACK_ILP64")
 
 # Create the shared library for karma.
-add_library(karma SHARED src/karma.c src/karma.h)
+add_library(karma SHARED src/karma.c src/karma.h src/svd.c src/svd.h)
 
 # Set dependencies so that chronos and openblas are built before linking to karma.
 # Disable during development or clion will rebuild the dependencies every time karma is built.
 add_dependencies(karma chronos_lib openblas_lib)
 
-# Link karma to the static chronos and openblas libraries.
-target_link_libraries(karma libchronos.a libopenblas.a)
+# Link karma to the required libraries.
+target_link_libraries(karma libchronos.a libopenblas.a gfortran)
