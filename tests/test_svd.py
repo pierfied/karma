@@ -63,3 +63,14 @@ def test_svd_non_sqr_err():
 
     with np.testing.assert_raises_regex(Exception, 'square'):
         svd.svd(mat)
+
+
+def test_svd_lapack_err():
+    """Test that svd raises an exception when LAPACK fails with nan input."""
+
+    n = 10
+
+    mat = np.zeros((n, n)) * np.nan
+
+    with np.testing.assert_raises_regex(Exception, 'LAPACK'):
+        svd.svd(mat)
