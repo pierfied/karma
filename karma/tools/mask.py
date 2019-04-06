@@ -3,7 +3,7 @@ import healpy as hp
 
 
 def add_buffer(mask, buffer):
-    """Add a buffer of region around a mask.
+    """Add a buffer region around a mask.
 
     :param mask: Mask to be have the buffer added to.
     :type mask: array-like (bool)
