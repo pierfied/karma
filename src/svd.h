@@ -8,12 +8,12 @@
 /**
  * @brief Struct containing SVD results of a square matrix A = U * S * VT.
  *
- * @var len Length of the matrix in the unrotated space.
- * @var num_vecs Number of singular vectors/values.
- * @var U Pointer to left rotation matrix U with shape len x num_vecs.
- * @var S Pointer to the singular values S with shape num_vecs.
- * @var VT Pointer to the right rotation matrix VT with shape num_vecs x len.
- * @var info Status returned by LAPACK.
+ * @param len Length of the matrix in the unrotated space.
+ * @param num_vecs Number of singular vectors/values.
+ * @param U Pointer to left rotation matrix U with shape len x num_vecs.
+ * @param S Pointer to the singular values S with shape num_vecs.
+ * @param VT Pointer to the right rotation matrix VT with shape num_vecs x len.
+ * @param info Status returned by LAPACK.
  */
 typedef struct USVT_struct {
     long len;
