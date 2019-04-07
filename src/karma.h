@@ -5,6 +5,8 @@
 #ifndef KARMA_KARMA_H
 #define KARMA_KARMA_H
 
+#include <hmc.h>
+
 /**
  * @brief Struct containing the args for the likelihood function.
  *
@@ -35,5 +37,24 @@ typedef struct KarmaArgs_struct {
     double *g2_obs;
     double *sigma_g;
 } KarmaArgs;
+
+/**
+ * @brief Runs the HMC sampler on the full posterior.
+ *
+ * @param hmc_args HMCArgs struct containing arguments for the HMC sampler.
+ *                 Likelihood function and args will be set here and do not need to be set beforehand.
+ * @param karma_args KarmaArgs struct with arguments for the likelihood function.
+ * @return SampleChain struct with the Markov chain of the sample run.
+ */
+SampleChain karma_sample(HMCArgs hmc_args, KarmaArgs karma_args);
+
+/**
+ * @brief Calculates the map likelihood and gradient to be used by the HMC sampler.
+ *
+ * @param x Parameter values in the diagonal basis.
+ * @param args_ptr Pointer to a KarmaArgs struct.
+ * @return Hamiltonian struct containing the log-likelihood and gradient.
+ */
+Hamiltonian karma_likelihood(double *x, void *args_ptr);
 
 #endif //KARMA_KARMA_H

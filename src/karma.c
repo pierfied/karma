@@ -7,13 +7,17 @@
 #include <stdlib.h>
 #include <math.h>
 
-/**
- * @brief Calculates the map likelihood and gradient to be used by the HMC sampler.
- *
- * @param x Parameter values in the diagonal basis.
- * @param args_ptr Pointer to a KarmaArgs struct.
- * @return Hamiltonian struct containing the log-likelihood and gradient.
- */
+SampleChain karma_sample(HMCArgs hmc_args, KarmaArgs karma_args) {
+    // Add the likelihood function and args to the HMCArgs struct.
+    hmc_args.log_likelihood = karma_likelihood;
+    hmc_args.likelihood_args = &karma_args;
+
+    // Run the sampler.
+    SampleChain chain = hmc(hmc_args);
+
+    return chain;
+}
+
 Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     // Cast the arg pointer to a KarmArgs pointer.
     KarmaArgs *args = (KarmaArgs *) args_ptr;
@@ -59,7 +63,7 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     for (long i = 0; i < mask_npix; ++i) {
         g1[i] = 0;
         g2[i] = 0;
-        
+
         for (long j = 0; j < buffer_npix; ++j) {
             long ind = i * buffer_npix + j;
 
