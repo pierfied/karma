@@ -37,7 +37,6 @@ def svd(mat):
 
     # Load the KARMA library.
     lib_path = os.path.join(os.path.dirname(__file__), '../libkarma.so')
-    print(lib_path)
     karma_lib = ctypes.cdll.LoadLibrary(lib_path)
 
     # Define the call to the c svd routine.
