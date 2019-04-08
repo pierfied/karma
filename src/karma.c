@@ -133,7 +133,10 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     // Compute the total log-likelihood.
     double log_p = 0;
     for (long i = 0; i < num_vecs; ++i) {
-        log_p += (x[i] * x[i]) / s[i] + f1_g1[i] + f2_g2[i];
+        log_p += (x[i] * x[i]) / s[i];
+    }
+    for (long i = 0; i < mask_npix; ++i) {
+        log_p += f1_g1[i] + f2_g2[i];
     }
     log_p *= -0.5;
 
