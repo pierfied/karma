@@ -212,7 +212,7 @@ class KarmaSampler:
             raise Exception('Rotation matrix (u) must be a 2D array.')
         if k2g1.ndim != 2 or k2g2.ndim != 2:
             raise Exception('Kappa -> gamma transformation matrices (k2g1, k2g2) must be 2D arrays.')
-        if g1_obs.ndim != 1 or g2_obs.ndim != 2:
+        if g1_obs.ndim != 1 or g2_obs.ndim != 1:
             raise Exception('Observed gamma values (g1_obs, g2_obs) must be 1D arrays.')
         if sigma_g.ndim != 1:
             raise Exception('Sigma gamma values (sigma_g) must be a 1D array.')
@@ -273,7 +273,7 @@ class KarmaSampler:
         hmc_args.samp_epsilon = samp_epsilon
         hmc_args.x0 = x0.ctypes.data_as(d_ptr)
         hmc_args.m = m.ctypes.data_as(d_ptr)
-        hmc_args.sigma_p = sigma_p
+        hmc_args.sigma_p = sigma_p.ctypes.data_as(d_ptr)
         hmc_args.verbose = int(verbose)
 
         # Create the args struct for the likelihood function.
@@ -293,7 +293,6 @@ class KarmaSampler:
 
         # Load the KARMA library.
         lib_path = os.path.join(os.path.dirname(__file__), 'libkarma.so')
-        print(lib_path)
         karma_lib = ctypes.cdll.LoadLibrary(lib_path)
 
         # Define the call to the sampler driver.
@@ -306,8 +305,8 @@ class KarmaSampler:
 
         # Get the results from the returned struct.
         accept_rate = results.accept_rate
-        chain = np.stack([np.ctypeslib.as_array(results.samples[i]) for i in range(num_samples)])
-        logp = np.ctypeslib.as_array(results.log_likelihoods)
+        chain = np.stack([np.ctypeslib.as_array(results.samples[i], shape=(num_vecs,)) for i in range(num_samples)])
+        logp = np.ctypeslib.as_array(results.log_likelihoods, shape=(num_samples,))
 
         # Convert chain from diagonal basis to kappa samples.
         chain = chain @ u.T + self.mu
