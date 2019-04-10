@@ -1,19 +1,7 @@
 import numpy as np
-import ctypes
+import subprocess
 import os
 
-
-class USVT(ctypes.Structure):
-    """USVT struct class for ctypes."""
-
-    _fields_ = [
-        ('len', ctypes.c_long),
-        ('num_vecs', ctypes.c_long),
-        ('U', ctypes.POINTER(ctypes.c_double)),
-        ('S', ctypes.POINTER(ctypes.c_double)),
-        ('VT', ctypes.POINTER(ctypes.c_double)),
-        ('info', ctypes.c_long)
-    ]
 
 def svd(mat):
     """Perform SVD on a square matrix A = U * S * VT.
@@ -35,28 +23,39 @@ def svd(mat):
     if mat.shape[0] != mat.shape[1]:
         raise Exception('Input matrix must be square.')
 
-    # Load the KARMA library.
-    lib_path = os.path.join(os.path.dirname(__file__), '../libkarma.so')
-    karma_lib = ctypes.cdll.LoadLibrary(lib_path)
+    mat_len = len(mat)
 
-    # Define the call to the c svd routine.
-    karma_svd = karma_lib.svd
-    karma_svd.argtypes = [ctypes.c_long, ctypes.POINTER(ctypes.c_double)]
-    karma_svd.restype = USVT
+    # Load the KARMA SVD executable.
+    exe_path = os.path.join(os.path.dirname(__file__), '../karma_svd')
+    proc = subprocess.Popen(exe_path, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    # Create the args to pass to the c svd routine.
-    len = mat.shape[0]
-    mat_copy = np.ascontiguousarray(mat.copy(), dtype=np.double)
-    mat_copy_p = mat_copy.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    # Pass the matrix to the SVD routine via stdin.
+    proc.stdin.write(mat_len.to_bytes(8, 'little'))
+    proc.stdin.write(mat.tobytes())
+    proc.stdin.close()
 
-    # Run the c svd routine.
-    usvt = karma_svd(len, mat_copy_p)
+    # Get the results from the SVD routine via stdout.
+    data = np.frombuffer(proc.stdout.read())
 
-    if usvt.info != 0:
-        raise Exception('LAPACK returned status %d.' % usvt.info)
+    # Extract U.
+    start = 0
+    end = mat_len * mat_len
+    U = data[start:end].reshape([mat_len, mat_len])
 
-    U = np.ctypeslib.as_array(usvt.U, shape=(len, len))
-    S = np.ctypeslib.as_array(usvt.S, shape=(len,))
-    VT = np.ctypeslib.as_array(usvt.VT, shape=(len, len))
+    # Extract S.
+    start = end
+    end += mat_len
+    S = data[start:end]
+
+    # Extract VT.
+    start = end
+    end += mat_len * mat_len
+    VT = data[start:end].reshape([mat_len, mat_len])
+
+    # Get the LAPACK return status.
+    info = proc.wait()
+
+    if info != 0:
+        raise Exception('LAPACK returned status %d.' % info)
 
     return U, S, VT
