@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "openmp-use-default-none"
 //
 // Created by pierfied on 4/4/19.
 //
@@ -34,7 +36,8 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     double *k2g2 = args->k2g2;
     double *g1_obs = args->g1_obs;
     double *g2_obs = args->g2_obs;
-    double *sigma_g = args->sigma_g;
+    double *sigma_g1 = args->sigma_g1;
+    double *sigma_g2 = args->sigma_g2;
 
     // Calculate the kappa and log parameter values from the diagonal basis parameters.
     double y[buffer_npix];
@@ -83,9 +86,10 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
         double delta_g2_i = g2[i] - g2_obs[i];
 
         // Calculate the gradient df/dg.
-        double var_g_i = sigma_g[i] * sigma_g[i];
-        df1_dg1[i] = delta_g1_i / var_g_i;
-        df2_dg2[i] = delta_g2_i / var_g_i;
+        double var_g1_i = sigma_g1[i] * sigma_g1[i];
+        double var_g2_i = sigma_g2[i] * sigma_g2[i];
+        df1_dg1[i] = delta_g1_i / var_g1_i;
+        df2_dg2[i] = delta_g2_i / var_g2_i;
 
         // Calculate the shear likelihood contribution.
         f1_g1[i] = df1_dg1[i] * delta_g1_i;
