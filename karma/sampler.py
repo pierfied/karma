@@ -224,8 +224,9 @@ class KarmaSampler:
         num_vecs = len(s)
         buffer_npix = u.shape[0]
         mask_npix = len(g1_obs)
-        if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != sigma_g.shape
-                or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix):
+        if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != sigma_g1.shape
+                or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix
+                or sigma_g1.shape != sigma_g2.shape):
             raise Exception('Input shapes are inconsistent.')
 
         # If k0 is set compute x0 values.
