@@ -38,6 +38,8 @@ class KarmaArgs(ctypes.Structure):
         ('g2_obs', ctypes.POINTER(ctypes.c_double)),
         ('sigma_g1', ctypes.POINTER(ctypes.c_double)),
         ('sigma_g2', ctypes.POINTER(ctypes.c_double)),
+        ('sigma_gh1', ctypes.c_double),
+        ('sigma_gh2', ctypes.c_double),
     ]
 
 
@@ -62,7 +64,7 @@ class KarmaSampler:
     g2_obs = None
     sigma_g = None
 
-    def __init__(self, g1_obs, g2_obs, sigma_g1, sigma_g2):
+    def __init__(self, g1_obs, g2_obs, sigma_g1, sigma_g2, sigma_gh1, sigma_gh2):
         """Initializer for karma sampler class.
 
         :param g1_obs: First observed shear component.
@@ -77,6 +79,8 @@ class KarmaSampler:
         self.g2_obs = g2_obs
         self.sigma_g1 = sigma_g1
         self.sigma_g2 = sigma_g2
+        self.sigma_gh1 = sigma_gh1
+        self.sigma_gh2 = sigma_gh2
 
     def set_lognorm_params(self, mu, shift, cov=None, rcond=None, u=None, s=None):
         """Setter for the parameters of the lognormal prior.
@@ -250,8 +254,8 @@ class KarmaSampler:
             x0 = np.random.standard_normal(num_vecs) * np.sqrt(s)
 
         # Calculate the optimal scaling of the mass and momenta for HMC.
-        m = 1 / s
-        sigma_p = 1 / np.sqrt(s)
+        m = 1 / np.concatenate([s, self.sigma_gh1 ** 2, self.sigma_gh2 ** 2])
+        sigma_p = np.sqrt(m)
 
         # Ensure that all quantities are contiguous arrays in memory.
         s = np.ascontiguousarray(s)
@@ -296,6 +300,8 @@ class KarmaSampler:
         karma_args.g2_obs = g2_obs.ctypes.data_as(d_ptr)
         karma_args.sigma_g1 = sigma_g1.ctypes.data_as(d_ptr)
         karma_args.sigma_g2 = sigma_g2.ctypes.data_as(d_ptr)
+        karma_args.sigma_gh1 = self.sigma_gh1
+        karma_args.sigma_gh2 = self.sigma_gh2
 
         # Load the KARMA library.
         lib_path = os.path.join(os.path.dirname(__file__), 'libkarma.so')
@@ -311,8 +317,12 @@ class KarmaSampler:
 
         # Get the results from the returned struct.
         accept_rate = results.accept_rate
-        chain = np.stack([np.ctypeslib.as_array(results.samples[i], shape=(num_vecs,)) for i in range(num_samples)])
+        chain = np.stack(
+            [np.ctypeslib.as_array(results.samples[i], shape=(num_vecs + 2 * mask_npix,)) for i in range(num_samples)])
         logp = np.ctypeslib.as_array(results.log_likelihoods, shape=(num_samples,))
+
+        # Trim the high-frequency parameters from the chain.
+        chain = chain[:, :num_vecs]
 
         # Convert chain from diagonal basis to kappa samples.
         chain = chain @ u.T + self.mu
