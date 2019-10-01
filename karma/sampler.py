@@ -251,7 +251,9 @@ class KarmaSampler:
             x0 = u.T @ (y0 - self.mu)
         else:
             # Otherwise randomly initialize x0.
-            x0 = np.random.standard_normal(num_vecs) * np.sqrt(s)
+            # x0 = np.random.standard_normal(num_vecs) * np.sqrt(s)
+            x0 = np.random.standard_normal(num_vecs + 2 * mask_npix) * np.sqrt(
+                np.concatenate([s, self.sigma_gh1 ** 2, self.sigma_gh2 ** 2]))
 
         # Calculate the optimal scaling of the mass and momenta for HMC.
         m = 1 / np.concatenate([s, self.sigma_gh1 ** 2, self.sigma_gh2 ** 2])
