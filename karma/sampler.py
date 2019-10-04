@@ -36,8 +36,8 @@ class KarmaArgs(ctypes.Structure):
         ('k2g2', ctypes.POINTER(ctypes.c_double)),
         ('g1_obs', ctypes.POINTER(ctypes.c_double)),
         ('g2_obs', ctypes.POINTER(ctypes.c_double)),
-        ('sigma_g1', ctypes.POINTER(ctypes.c_double)),
-        ('sigma_g2', ctypes.POINTER(ctypes.c_double)),
+        ('cg1_inv', ctypes.POINTER(ctypes.c_double)),
+        ('cg2_inv', ctypes.POINTER(ctypes.c_double)),
     ]
 
 
@@ -62,7 +62,7 @@ class KarmaSampler:
     g2_obs = None
     sigma_g = None
 
-    def __init__(self, g1_obs, g2_obs, sigma_g1, sigma_g2):
+    def __init__(self, g1_obs, g2_obs, cg1_inv, cg2_inv):
         """Initializer for karma sampler class.
 
         :param g1_obs: First observed shear component.
@@ -75,8 +75,8 @@ class KarmaSampler:
 
         self.g1_obs = g1_obs
         self.g2_obs = g2_obs
-        self.sigma_g1 = sigma_g1
-        self.sigma_g2 = sigma_g2
+        self.cg1_inv = cg1_inv
+        self.cg2_inv = cg2_inv
 
     def set_lognorm_params(self, mu, shift, cov=None, rcond=None, u=None, s=None):
         """Setter for the parameters of the lognormal prior.
@@ -194,7 +194,7 @@ class KarmaSampler:
 
         # Check that all quantities are set.
         if (self.mu is None or self.shift is None or self.s is None or self.u is None or self.k2g1 is None
-                or self.k2g2 is None or self.g1_obs is None or self.g2_obs is None or self.sigma_g is None):
+                or self.k2g2 is None or self.g1_obs is None or self.g2_obs is None or self.cg1_inv is None):
             raise Exception('One or more of the following parameters is not set: '
                             'mu, shift, s, u, k2g1, k2g2, g1_obs, g2_obs, sigma_g')
 
@@ -205,8 +205,8 @@ class KarmaSampler:
         k2g2 = np.asarray(self.k2g2)
         g1_obs = np.asarray(self.g1_obs)
         g2_obs = np.asarray(self.g2_obs)
-        sigma_g1 = np.asarray(self.sigma_g1)
-        sigma_g2 = np.asarray(self.sigma_g2)
+        cg1_inv = np.asarray(self.cg1_inv)
+        cg2_inv = np.asarray(self.cg2_inv)
 
         # Check dimensions of inputs.
         if s.ndim != 1:
@@ -217,16 +217,16 @@ class KarmaSampler:
             raise Exception('Kappa -> gamma transformation matrices (k2g1, k2g2) must be 2D arrays.')
         if g1_obs.ndim != 1 or g2_obs.ndim != 1:
             raise Exception('Observed gamma values (g1_obs, g2_obs) must be 1D arrays.')
-        if sigma_g1.ndim != 1 or sigma_g2.ndim != 1:
+        if cg1_inv.ndim != 1 or cg2_inv.ndim != 1:
             raise Exception('Sigma gamma values (sigma_g) must be a 1D array.')
 
         # Check for inconsistencies in the shapes of the inputs.
         num_vecs = len(s)
         buffer_npix = u.shape[0]
         mask_npix = len(g1_obs)
-        if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != sigma_g1.shape
+        if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != cg1_inv.shape
                 or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix
-                or sigma_g1.shape != sigma_g2.shape):
+                or cg1_inv.shape != cg2_inv.shape):
             raise Exception('Input shapes are inconsistent.')
 
         # If k0 is set compute x0 values.
@@ -260,8 +260,8 @@ class KarmaSampler:
         k2g2 = np.ascontiguousarray(k2g2)
         g1_obs = np.ascontiguousarray(g1_obs)
         g2_obs = np.ascontiguousarray(g2_obs)
-        sigma_g1 = np.ascontiguousarray(sigma_g1)
-        sigma_g2 = np.ascontiguousarray(sigma_g2)
+        cg1_inv = np.ascontiguousarray(cg1_inv)
+        cg2_inv = np.ascontiguousarray(cg2_inv)
         x0 = np.ascontiguousarray(x0)
         m = np.ascontiguousarray(m)
         sigma_p = np.ascontiguousarray(sigma_p)
@@ -294,8 +294,8 @@ class KarmaSampler:
         karma_args.k2g2 = k2g2.ctypes.data_as(d_ptr)
         karma_args.g1_obs = g1_obs.ctypes.data_as(d_ptr)
         karma_args.g2_obs = g2_obs.ctypes.data_as(d_ptr)
-        karma_args.sigma_g1 = sigma_g1.ctypes.data_as(d_ptr)
-        karma_args.sigma_g2 = sigma_g2.ctypes.data_as(d_ptr)
+        karma_args.cg1_inv = cg1_inv.ctypes.data_as(d_ptr)
+        karma_args.cg2_inv = cg2_inv.ctypes.data_as(d_ptr)
 
         # Load the KARMA library.
         lib_path = os.path.join(os.path.dirname(__file__), 'libkarma.so')

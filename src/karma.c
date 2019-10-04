@@ -36,8 +36,8 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     double *k2g2 = args->k2g2;
     double *g1_obs = args->g1_obs;
     double *g2_obs = args->g2_obs;
-    double *sigma_g1 = args->sigma_g1;
-    double *sigma_g2 = args->sigma_g2;
+    double *cg1_inv = args->cg1_inv;
+    double *cg2_inv = args->cg2_inv;
 
     // Calculate the kappa and log parameter values from the diagonal basis parameters.
     double y[buffer_npix];
@@ -82,16 +82,22 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     double df2_dg2[mask_npix];
 #pragma omp parallel for
     for (long i = 0; i < mask_npix; ++i) {
+        df1_dg1[i] = 0;
+        df2_dg2[i] = 0;
+
+        for (long j = 0; j < mask_npix; ++j) {
+            double delta_g1_j = g1[j] - g1_obs[j];
+            double delta_g2_j = g2[j] - g2_obs[j];
+
+            long ind = i * mask_npix + j;
+
+            df1_dg1[i] += cg1_inv[ind] * delta_g1_j;
+            df2_dg2[i] += cg2_inv[ind] * delta_g2_j;
+        }
+
         double delta_g1_i = g1[i] - g1_obs[i];
         double delta_g2_i = g2[i] - g2_obs[i];
 
-        // Calculate the gradient df/dg.
-        double var_g1_i = sigma_g1[i] * sigma_g1[i];
-        double var_g2_i = sigma_g2[i] * sigma_g2[i];
-        df1_dg1[i] = delta_g1_i / var_g1_i;
-        df2_dg2[i] = delta_g2_i / var_g2_i;
-
-        // Calculate the shear likelihood contribution.
         f1_g1[i] = df1_dg1[i] * delta_g1_i;
         f2_g2[i] = df2_dg2[i] * delta_g2_i;
     }
