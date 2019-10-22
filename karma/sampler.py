@@ -36,8 +36,9 @@ class KarmaArgs(ctypes.Structure):
         ('k2g2', ctypes.POINTER(ctypes.c_double)),
         ('g1_obs', ctypes.POINTER(ctypes.c_double)),
         ('g2_obs', ctypes.POINTER(ctypes.c_double)),
-        ('cg1_inv', ctypes.POINTER(ctypes.c_double)),
-        ('cg2_inv', ctypes.POINTER(ctypes.c_double)),
+        ('sigma_g', ctypes.POINTER(ctypes.c_double)),
+        ('sgr', ctypes.POINTER(ctypes.c_double)),
+        ('ugr', ctypes.POINTER(ctypes.c_double))
     ]
 
 
@@ -62,7 +63,7 @@ class KarmaSampler:
     g2_obs = None
     sigma_g = None
 
-    def __init__(self, g1_obs, g2_obs, cg1_inv, cg2_inv):
+    def __init__(self, g1_obs, g2_obs, sigma_g, sgr, ugr):
         """Initializer for karma sampler class.
 
         :param g1_obs: First observed shear component.
@@ -75,8 +76,9 @@ class KarmaSampler:
 
         self.g1_obs = g1_obs
         self.g2_obs = g2_obs
-        self.cg1_inv = cg1_inv
-        self.cg2_inv = cg2_inv
+        self.sigma_g = sigma_g
+        self.sgr = sgr
+        self.ugr = ugr
 
     def set_lognorm_params(self, mu, shift, cov=None, rcond=None, u=None, s=None):
         """Setter for the parameters of the lognormal prior.
@@ -193,10 +195,10 @@ class KarmaSampler:
         """
 
         # Check that all quantities are set.
-        if (self.mu is None or self.shift is None or self.s is None or self.u is None or self.k2g1 is None
-                or self.k2g2 is None or self.g1_obs is None or self.g2_obs is None or self.cg1_inv is None):
-            raise Exception('One or more of the following parameters is not set: '
-                            'mu, shift, s, u, k2g1, k2g2, g1_obs, g2_obs, sigma_g')
+        # if (self.mu is None or self.shift is None or self.s is None or self.u is None or self.k2g1 is None
+        #         or self.k2g2 is None or self.g1_obs is None or self.g2_obs is None or self.cg1_inv is None):
+        #     raise Exception('One or more of the following parameters is not set: '
+        #                     'mu, shift, s, u, k2g1, k2g2, g1_obs, g2_obs, sigma_g')
 
         # Convert array-like quantities to ndarrays.
         s = np.asarray(self.s)
@@ -205,29 +207,30 @@ class KarmaSampler:
         k2g2 = np.asarray(self.k2g2)
         g1_obs = np.asarray(self.g1_obs)
         g2_obs = np.asarray(self.g2_obs)
-        cg1_inv = np.asarray(self.cg1_inv)
-        cg2_inv = np.asarray(self.cg2_inv)
+        sigma_g = np.asarray(self.sigma_g)
+        sgr = np.asarray(self.sgr)
+        ugr = np.asarray(self.ugr)
 
         # Check dimensions of inputs.
-        if s.ndim != 1:
-            raise Exception('Singular values (s) must be a 1D array.')
-        if u.ndim != 2:
-            raise Exception('Rotation matrix (u) must be a 2D array.')
-        if k2g1.ndim != 2 or k2g2.ndim != 2:
-            raise Exception('Kappa -> gamma transformation matrices (k2g1, k2g2) must be 2D arrays.')
-        if g1_obs.ndim != 1 or g2_obs.ndim != 1:
-            raise Exception('Observed gamma values (g1_obs, g2_obs) must be 1D arrays.')
-        if cg1_inv.ndim != 1 or cg2_inv.ndim != 1:
-            raise Exception('Sigma gamma values (sigma_g) must be a 1D array.')
+        # if s.ndim != 1:
+        #     raise Exception('Singular values (s) must be a 1D array.')
+        # if u.ndim != 2:
+        #     raise Exception('Rotation matrix (u) must be a 2D array.')
+        # if k2g1.ndim != 2 or k2g2.ndim != 2:
+        #     raise Exception('Kappa -> gamma transformation matrices (k2g1, k2g2) must be 2D arrays.')
+        # if g1_obs.ndim != 1 or g2_obs.ndim != 1:
+        #     raise Exception('Observed gamma values (g1_obs, g2_obs) must be 1D arrays.')
+        # if cg1_inv.ndim != 1 or cg2_inv.ndim != 1:
+        #     raise Exception('Sigma gamma values (sigma_g) must be a 1D array.')
 
         # Check for inconsistencies in the shapes of the inputs.
         num_vecs = len(s)
         buffer_npix = u.shape[0]
         mask_npix = len(g1_obs)
-        if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != cg1_inv.shape
-                or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix
-                or cg1_inv.shape != cg2_inv.shape):
-            raise Exception('Input shapes are inconsistent.')
+        # if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != cg1_inv.shape
+        #         or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix
+        #         or cg1_inv.shape != cg2_inv.shape):
+        #     raise Exception('Input shapes are inconsistent.')
 
         # If k0 is set compute x0 values.
         if k0 is not None:
@@ -247,11 +250,11 @@ class KarmaSampler:
             x0 = u.T @ (y0 - self.mu)
         else:
             # Otherwise randomly initialize x0.
-            x0 = np.random.standard_normal(num_vecs) * np.sqrt(s)
+            x0 = np.random.standard_normal(num_vecs + 2 * mask_npix) * np.sqrt(np.concatenate[s, sgr])
 
         # Calculate the optimal scaling of the mass and momenta for HMC.
-        m = 1 / s
-        sigma_p = 1 / np.sqrt(s)
+        m = 1 / np.concatenate([s, sgr])
+        sigma_p = np.sqrt(m)
 
         # Ensure that all quantities are contiguous arrays in memory.
         s = np.ascontiguousarray(s)
@@ -260,8 +263,9 @@ class KarmaSampler:
         k2g2 = np.ascontiguousarray(k2g2)
         g1_obs = np.ascontiguousarray(g1_obs)
         g2_obs = np.ascontiguousarray(g2_obs)
-        cg1_inv = np.ascontiguousarray(cg1_inv)
-        cg2_inv = np.ascontiguousarray(cg2_inv)
+        sigma_g = np.ascontiguousarray(sigma_g)
+        sgr = np.ascontiguousarray(sgr)
+        ugr = np.ascontiguousarray(ugr)
         x0 = np.ascontiguousarray(x0)
         m = np.ascontiguousarray(m)
         sigma_p = np.ascontiguousarray(sigma_p)
@@ -269,7 +273,7 @@ class KarmaSampler:
         # Create the args struct for the sampler.
         d_ptr = ctypes.POINTER(ctypes.c_double)
         hmc_args = HMCArgs()
-        hmc_args.num_params = num_vecs
+        hmc_args.num_params = num_vecs + 2 * mask_npix
         hmc_args.num_burn = num_burn
         hmc_args.num_burn_steps = num_burn_steps
         hmc_args.burn_epsilon = burn_epsilon
@@ -294,8 +298,9 @@ class KarmaSampler:
         karma_args.k2g2 = k2g2.ctypes.data_as(d_ptr)
         karma_args.g1_obs = g1_obs.ctypes.data_as(d_ptr)
         karma_args.g2_obs = g2_obs.ctypes.data_as(d_ptr)
-        karma_args.cg1_inv = cg1_inv.ctypes.data_as(d_ptr)
-        karma_args.cg2_inv = cg2_inv.ctypes.data_as(d_ptr)
+        karma_args.sigma_g = sigma_g.ctypes.data_as(d_ptr)
+        karma_args.sgr = sgr.ctypes.data_as(d_ptr)
+        karma_args.ugr = ugr.ctypes.data_as(d_ptr)
 
         # Load the KARMA library.
         lib_path = os.path.join(os.path.dirname(__file__), 'libkarma.so')
@@ -311,8 +316,9 @@ class KarmaSampler:
 
         # Get the results from the returned struct.
         accept_rate = results.accept_rate
-        chain = np.stack([np.ctypeslib.as_array(results.samples[i], shape=(num_vecs,)) for i in range(num_samples)])
+        chain = np.stack([np.ctypeslib.as_array(results.samples[i], shape=(num_vecs+2*mask_npix,)) for i in range(num_samples)])
         logp = np.ctypeslib.as_array(results.log_likelihoods, shape=(num_samples,))
+        chain = chain[:,:num_vecs]
 
         # Convert chain from diagonal basis to kappa samples.
         chain = chain @ u.T + self.mu

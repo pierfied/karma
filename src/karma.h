@@ -35,8 +35,9 @@ typedef struct KarmaArgs_struct {
     double *k2g2;
     double *g1_obs;
     double *g2_obs;
-    double *cg1_inv;
-    double *cg2_inv;
+    double *sigma_g;
+    double *sgr;
+    double *ugr;
 } KarmaArgs;
 
 /**

@@ -36,8 +36,9 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     double *k2g2 = args->k2g2;
     double *g1_obs = args->g1_obs;
     double *g2_obs = args->g2_obs;
-    double *cg1_inv = args->cg1_inv;
-    double *cg2_inv = args->cg2_inv;
+    double *sigma_g = args->sigma_g;
+    double *sgr = args->sgr;
+    double *ugr = args->ugr;
 
     // Calculate the kappa and log parameter values from the diagonal basis parameters.
     double y[buffer_npix];
@@ -75,6 +76,21 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
         }
     }
 
+    // G rec
+    double *xr = x + num_vecs;
+    double gr[mask_npix];
+#pragma omp parallel for
+    for (int i = 0; i < 2 * mask_npix; ++i) {
+        double gr_i = 0;
+
+        for (int j = 0; j < 2 * mask_npix; ++j) {
+            gr_i += ugr[i * 2 * mask_npix + j] * xr[j];
+        }
+
+        gr[i] = gr_i;
+    }
+
+
     // Compute the contribution of each pixel to the shear likelihood and the gradients df/dg.
     double f1_g1[mask_npix];
     double f2_g2[mask_npix];
@@ -82,24 +98,14 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     double df2_dg2[mask_npix];
 #pragma omp parallel for
     for (long i = 0; i < mask_npix; ++i) {
-        df1_dg1[i] = 0;
-        df2_dg2[i] = 0;
+        double delta_g1_i = g1[i] + gr[i] - g1_obs[i];
+        double delta_g2_i = g2[i] + gr[i + mask_npix] - g2_obs[i];
 
-        for (long j = 0; j < mask_npix; ++j) {
-            double delta_g1_j = g1[j] - g1_obs[j];
-            double delta_g2_j = g2[j] - g2_obs[j];
+        df1_dg1[i] = delta_g1_i / (sigma_g[i] * sigma_g[i]);
+        df2_dg2[i] = delta_g2_i / (sigma_g[i] * sigma_g[i]);
 
-            long ind = i * mask_npix + j;
-
-            df1_dg1[i] += cg1_inv[ind] * delta_g1_j;
-            df2_dg2[i] += cg2_inv[ind] * delta_g2_j;
-        }
-
-        double delta_g1_i = g1[i] - g1_obs[i];
-        double delta_g2_i = g2[i] - g2_obs[i];
-
-        f1_g1[i] = df1_dg1[i] * delta_g1_i;
-        f2_g2[i] = df2_dg2[i] * delta_g2_i;
+        f1_g1[i] = delta_g1_i * df1_dg1[i];
+        f2_g2[i] = delta_g2_i * df2_dg2[i];
     }
 
     // Calculate the gradients df/dy via chain rule.
@@ -122,7 +128,7 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     }
 
     // Calculate the gradients df/dx via chain rule and the total gradient dlnP/dx.
-    double *grad = malloc(sizeof(double) * num_vecs);
+    double *grad = malloc(sizeof(double) * num_vecs + 2 * mask_npix);
 #pragma omp parallel for
     for (long i = 0; i < num_vecs; ++i) {
         double df1_dx_i = 0;
@@ -140,6 +146,27 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
         grad[i] = -(x[i] / s[i] + df1_dx_i + df2_dx_i);
     }
 
+    // G rec grad
+    double df_dgr[mask_npix];
+#pragma omp parallel for
+    for (int i = 0; i < mask_npix; ++i) {
+        df_dgr[i] = df1_dg1[i];
+    }
+#pragma omp parallel for
+    for (int i = 0; i < mask_npix; ++i) {
+        df_dgr[i + mask_npix] = df2_dg2[i];
+    }
+#pragma omp parallel for
+    for (int i = 0; i < 2 * mask_npix; ++i) {
+        double df_dxr_i = 0;
+
+        for (int j = 0; j < 2 * mask_npix; ++j) {
+            df_dxr_i += ugr[j * 2 * mask_npix + j] * df_dgr[j];
+        }
+
+        grad[num_vecs + i] = -(xr[i] / sgr[i] + df_dxr_i);
+    }
+
     // Compute the total log-likelihood.
     double log_p = 0;
     for (long i = 0; i < num_vecs; ++i) {
@@ -147,6 +174,9 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     }
     for (long i = 0; i < mask_npix; ++i) {
         log_p += f1_g1[i] + f2_g2[i];
+    }
+    for (int i = 0; i < 2 * mask_npix; ++i) {
+        log_p += (xr[i] * xr[i]) / sgr[i];
     }
     log_p *= -0.5;
 
