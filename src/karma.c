@@ -28,7 +28,7 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     long mask_npix = args->mask_npix;
     long buffer_npix = args->buffer_npix;
     long num_vecs = args->num_vecs;
-    double mu = args->mu;
+    double *mu = args->mu;
     double shift = args->shift;
     double *s = args->s;
     double *u = args->u;
@@ -45,7 +45,7 @@ Hamiltonian karma_likelihood(double *x, void *args_ptr) {
     double kappa[buffer_npix];
 #pragma omp parallel for
     for (long i = 0; i < buffer_npix; ++i) {
-        y[i] = mu;
+        y[i] = mu[i];
 
         // Compute y from the diagonal basis parameters.
         for (long j = 0; j < num_vecs; ++j) {

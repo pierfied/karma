@@ -27,7 +27,7 @@ typedef struct KarmaArgs_struct {
     long mask_npix;
     long buffer_npix;
     long num_vecs;
-    double mu;
+    double *mu;
     double shift;
     double *s;
     double *u;

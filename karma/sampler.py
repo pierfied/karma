@@ -28,7 +28,7 @@ class KarmaArgs(ctypes.Structure):
         ('mask_npix', ctypes.c_long),
         ('buffer_npix', ctypes.c_long),
         ('num_vecs', ctypes.c_long),
-        ('mu', ctypes.c_double),
+        ('mu', ctypes.POINTER(ctypes.c_double)),
         ('shift', ctypes.c_double),
         ('s', ctypes.POINTER(ctypes.c_double)),
         ('u', ctypes.POINTER(ctypes.c_double)),
@@ -193,12 +193,13 @@ class KarmaSampler:
         """
 
         # Check that all quantities are set.
-        if (self.mu is None or self.shift is None or self.s is None or self.u is None or self.k2g1 is None
-                or self.k2g2 is None or self.g1_obs is None or self.g2_obs is None or self.cg1_inv is None):
-            raise Exception('One or more of the following parameters is not set: '
-                            'mu, shift, s, u, k2g1, k2g2, g1_obs, g2_obs, sigma_g')
+        # if (self.mu is None or self.shift is None or self.s is None or self.u is None or self.k2g1 is None
+        #         or self.k2g2 is None or self.g1_obs is None or self.g2_obs is None or self.cg1_inv is None):
+        #     raise Exception('One or more of the following parameters is not set: '
+        #                     'mu, shift, s, u, k2g1, k2g2, g1_obs, g2_obs, sigma_g')
 
         # Convert array-like quantities to ndarrays.
+        mu = np.asarray(self.mu)
         s = np.asarray(self.s)
         u = np.asarray(self.u)
         k2g1 = np.asarray(self.k2g1)
@@ -209,25 +210,25 @@ class KarmaSampler:
         cg2_inv = np.asarray(self.cg2_inv)
 
         # Check dimensions of inputs.
-        if s.ndim != 1:
-            raise Exception('Singular values (s) must be a 1D array.')
-        if u.ndim != 2:
-            raise Exception('Rotation matrix (u) must be a 2D array.')
-        if k2g1.ndim != 2 or k2g2.ndim != 2:
-            raise Exception('Kappa -> gamma transformation matrices (k2g1, k2g2) must be 2D arrays.')
-        if g1_obs.ndim != 1 or g2_obs.ndim != 1:
-            raise Exception('Observed gamma values (g1_obs, g2_obs) must be 1D arrays.')
-        if cg1_inv.ndim != 1 or cg2_inv.ndim != 1:
-            raise Exception('Sigma gamma values (sigma_g) must be a 1D array.')
+        # if s.ndim != 1:
+        #     raise Exception('Singular values (s) must be a 1D array.')
+        # if u.ndim != 2:
+        #     raise Exception('Rotation matrix (u) must be a 2D array.')
+        # if k2g1.ndim != 2 or k2g2.ndim != 2:
+        #     raise Exception('Kappa -> gamma transformation matrices (k2g1, k2g2) must be 2D arrays.')
+        # if g1_obs.ndim != 1 or g2_obs.ndim != 1:
+        #     raise Exception('Observed gamma values (g1_obs, g2_obs) must be 1D arrays.')
+        # if cg1_inv.ndim != 1 or cg2_inv.ndim != 1:
+        #     raise Exception('Sigma gamma values (sigma_g) must be a 1D array.')
 
         # Check for inconsistencies in the shapes of the inputs.
         num_vecs = len(s)
         buffer_npix = u.shape[0]
         mask_npix = len(g1_obs)
-        if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != cg1_inv.shape
-                or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix
-                or cg1_inv.shape != cg2_inv.shape):
-            raise Exception('Input shapes are inconsistent.')
+        # if (k2g1.shape != k2g2.shape or g1_obs.shape != g2_obs.shape or g1_obs.shape != cg1_inv.shape
+        #         or u.shape[1] != num_vecs or k2g1.shape[0] != mask_npix or k2g1.shape[1] != buffer_npix
+        #         or cg1_inv.shape != cg2_inv.shape):
+        #     raise Exception('Input shapes are inconsistent.')
 
         # If k0 is set compute x0 values.
         if k0 is not None:
@@ -254,6 +255,7 @@ class KarmaSampler:
         sigma_p = 1 / np.sqrt(s)
 
         # Ensure that all quantities are contiguous arrays in memory.
+        mu = np.ascontiguousarray(mu)
         s = np.ascontiguousarray(s)
         u = np.ascontiguousarray(u)
         k2g1 = np.ascontiguousarray(k2g1)
@@ -286,7 +288,7 @@ class KarmaSampler:
         karma_args.mask_npix = mask_npix
         karma_args.buffer_npix = buffer_npix
         karma_args.num_vecs = num_vecs
-        karma_args.mu = self.mu
+        karma_args.mu = mu.ctypes.data_as(d_ptr)
         karma_args.shift = self.shift
         karma_args.s = s.ctypes.data_as(d_ptr)
         karma_args.u = u.ctypes.data_as(d_ptr)
